@@ -794,12 +794,6 @@ public class LivePlayActivity extends BaseActivity {
                 });
             }
             refreshChannelList(currentChannelGroupIndex);
-            if (currentLiveChannelIndex > -1){
-                mLiveChannelView.scrollToPosition(currentLiveChannelIndex);
-                mLiveChannelView.setSelection(currentLiveChannelIndex);
-            }
-//            mChannelGroupView.scrollToPosition(currentChannelGroupIndex);
-//            mChannelGroupView.setSelection(currentChannelGroupIndex);
 
             mHandler.postDelayed(mFocusCurrentChannelAndShowChannelList, 50);
         }
@@ -813,13 +807,18 @@ public class LivePlayActivity extends BaseActivity {
     private List<LiveChannelItem> mLastChannelList = new ArrayList<>();
 
     private void refreshChannelList(int currentChannelGroupIndex) {
-        // 1. 获取新数据
         List<LiveChannelItem> newChannels = getLiveChannels(currentChannelGroupIndex);
-        // 2. 判断数据是否变化（相同组索引且数据内容未变）
+        // 2. 判断数据是否变化
         if (currentChannelGroupIndex == mLastChannelGroupIndex
                 && isSameData(newChannels, mLastChannelList)) {
             return; // 数据未变化，跳过刷新 解决部分直播频道过多时卡顿
         }
+        if (currentLiveChannelIndex > -1){
+            mLiveChannelView.scrollToPosition(currentLiveChannelIndex);
+            mLiveChannelView.setSelection(currentLiveChannelIndex);
+        }
+        mChannelGroupView.scrollToPosition(currentChannelGroupIndex);
+        mChannelGroupView.setSelection(currentChannelGroupIndex);
         mLastChannelGroupIndex = currentChannelGroupIndex;
         mLastChannelList = new ArrayList<>(newChannels);
         liveChannelItemAdapter.setNewData(newChannels);
@@ -970,8 +969,6 @@ public class LivePlayActivity extends BaseActivity {
             mVideoView.setUrl(currentLiveChannelItem.getUrl(),liveWebHeader());
             mVideoView.start();
         }
-//        liveChannelItemAdapter.setFocusedChannelIndex(currentLiveChannelIndex);
-        liveChannelItemAdapter.setSelectedChannelIndex(currentLiveChannelIndex);
         return true;
     }
 
@@ -1532,6 +1529,7 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     private void selectChannelGroup(int groupIndex, boolean focus, int liveChannelIndex) {
+        mLastChannelGroupIndex=groupIndex;
         if (focus) {
             liveChannelGroupAdapter.setFocusedGroupIndex(groupIndex);
             liveChannelItemAdapter.setFocusedChannelIndex(-1);
@@ -1576,8 +1574,6 @@ public class LivePlayActivity extends BaseActivity {
                 if (position < 0) return;
                 liveChannelGroupAdapter.setFocusedGroupIndex(-1);
                 liveChannelItemAdapter.setFocusedChannelIndex(position);
-                mHandler.removeCallbacks(mHideChannelListRun);
-                mHandler.postDelayed(mHideChannelListRun, postTimeout);
             }
 
             @Override
@@ -1591,13 +1587,13 @@ public class LivePlayActivity extends BaseActivity {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
                 FastClickCheckUtil.check(view);
+                liveChannelItemAdapter.setSelectedChannelIndex(position);
                 clickLiveChannel(position);
             }
         });
     }
 
     private void clickLiveChannel(int position) {
-        liveChannelItemAdapter.setSelectedChannelIndex(position);
         if (tvLeftChannelListLayout.getVisibility() == View.VISIBLE) {
             mHandler.removeCallbacks(mHideChannelListRun);
             mHandler.postDelayed(mHideChannelListRun, postTimeout);
